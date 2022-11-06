@@ -26,7 +26,6 @@ function f_crearred {
       echo -e "<network>\n  <name>intra</name>\n  <forward mode='nat'/>\n  <domain name='intra'/>\n  <ip address='10.10.20.1' netmask='255.255.255.0'>\n    <dhcp>\n      <range start='10.10.20.100' end='10.10.20.254'/>\n    </dhcp>\n  </ip>\n</network>" > ./intra.xml
       virsh -c qemu:///system net-define ./intra.xml
       virsh -c qemu:///system net-start intra
-      echo -e "\nRealizado"
 }
 
 function f_crearmaquina {
@@ -52,7 +51,7 @@ function f_crearmaquina {
       ip=$(virsh -c qemu:///system domifaddr maquina1 --full | egrep -E -o '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}')
       ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i clavepriv debian@$ip sudo sed -i 's/debian/maquina1/g' "/etc/hosts"
       ssh -i clavepriv debian@$ip sudo sed -i 's/debian/maquina1/g' "/etc/hostname"
-      
+      ssh -i clavepriv debian@$ip 'echo -e "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf'      
 }
 
 function f_voladd {
@@ -64,7 +63,8 @@ function f_voladd {
 
 function f_reinicio {
       #REINICIAMOS LA MÁQUINA PARA QUE SE CAMBIE EL HOSTNAME
-      ssh -i clavepriv debian@$ip sudo reboot
+      virsh -c qemu:///system destroy maquina1
+      virsh -c qemu:///system start maquina1
       echo -e "Esperando a que el sistema se inicie...\n"
       sleep 20
 }
@@ -107,7 +107,7 @@ function f_addbr0 {
       # Añade una nueva interfaz a la máquina virtual para conectarla a la red pública (al punte br0).
       virsh -c qemu:///system attach-interface --domain maquina1 --type bridge --source br0 --model virtio --config
       #tenía pensado guardar en una variable de entorno el nombre de la 3a interfaz 
-      #de un ip a que sería la red a configurar, pero da errores las variables de 
+      #de un ip a que sería la red a configurar, pero da Errores las variables de 
       #entorno a traves de ssh. Dejo enp8s0 que es la segunda interfaz que añade.      
       ssh -i clavepriv debian@$ip 'echo -e "\nallow hotplug enp8s0\niface enp8s0 inet dhcp" | sudo tee -a /etc/network/interfaces'
       #reinicio la máquina para que aplique la configuración
@@ -117,14 +117,15 @@ function f_addbr0 {
 
 function f_showip {
       # Muestra la nueva IP que ha recibido.
-      ssh -i clavepriv debian@$ip sudo ifup enp8s0
+      ssh -i clavepriv debian@$ip "sudo -- bash -c 'dhclient -r && dhclient'"
+      sleep 10
       ip_nueva=$(ssh -i clavepriv debian@$ip "ip a show enp8s0 | grep inet | cut -d/ -f1 | head -n 1 | grep -oP '(\d+\.){3}\d+'" | sed 's/ //g')
       echo "La ip del br0 es $ip_nueva"
 }
 
 function f_aumento {
       # Apaga maquina1 y auméntale la RAM a 2 GiB y vuelve a iniciar la máquina.
-      ssh -i clavepriv debian@$ip "sudo poweroff"
+      virsh -c qemu:///system destroy maquina1
       virsh -c qemu:///system setmaxmem --domain maquina1 2G --config
       virsh -c qemu:///system setmem --domain maquina1 2G --config
       virsh -c qemu:///system start maquina1
@@ -152,3 +153,85 @@ quien=$(id -u)
       else
             echo "No hay que ejecutar el script como root."
       fi
+
+### La función de este trozo de código es validar que todos las funciones se ejecutan correctamente.
+#quien=$(id -u)
+#      if [[ $quien -ne 0 ]]
+#      then
+#            f_crearimagen
+#            if [[ $? -eq 0 ]]
+#            then 
+#                  echo "La imagen se ha creado correctamente."
+#                  f_crearred
+#                  if [[ $? -eq 0 ]]
+#                  then
+#                        echo "La red se ha creado correctamente."
+#                        f_crearmaquina
+#                        if [[ $? -eq 0 ]]
+#                        then
+#                              echo "La máquina ha sido creada correctamente"
+#                              f_voladd
+#                              if [[ $? -eq 0 ]]
+#                              then
+#                                    echo "El volumen ha sido añadido correctamente."
+#                                    f_reinicio
+#                                    if [[ $? -eq 0 ]]
+#                                    then
+#                                          f_mount
+#                                          if [[ $? -eq 0 ]]
+#                                          then
+#                                                echo "El disco se ha montado correctamente."
+#                                                f_pausa
+#                                                if [[ $? -eq 0 ]]
+#                                                then
+#                                                      f_installlxc
+#                                                      if [[ $? -eq 0 ]]
+#                                                      then
+#                                                            echo "LXC se ha instalado correctamente."
+#                                                            f_addbr0
+#                                                            if [[ $? -eq 0 ]]
+#                                                            then
+#                                                                  echo "El bridge br0 se ha añadido correctamente."
+#                                                                  f_showip
+#                                                                  if [[ $? -eq 0 ]]
+#                                                                  then
+#                                                                        f_aumento
+#                                                                        if [[ $? -eq 0 ]]
+#                                                                        then
+#                                                                              echo "La memoria RAM se ha aumentado correctamente."
+#                                                                        else
+#                                                                              echo "Error al aumentar la memoria ram."
+#                                                                        fi
+#                                                                  else
+#                                                                        echo "Error al mostrar la ip."
+#                                                                  fi
+#                                                            else
+#                                                                  echo "Error al crear el brige"
+#                                                            fi
+#                                                      else
+#                                                            echo "Error al instalar o crear la máquina en lxc."
+#                                                      fi
+#                                                else
+#                                                      echo "Error al pausar la máquina"
+#                                                fi
+#                                          else
+#                                                echo "Error al montar el disco."
+#                                          fi
+#                                    else
+#                                          echo "Error al reiniciar la máquina."
+#                                    fi
+#                              else                     
+#                                    echo "Error  al añadir el volumen."
+#                              fi
+#                        else
+#                              echo "Error al crear la máquina."
+#                        fi
+#                  else
+#                        echo "Error al crear la red."
+#                  fi
+#            else
+#                  echo "Error al crear la imagen."
+#            fi
+#      else
+#            echo "No hay que ejecutar el script como root."
+#      fi
