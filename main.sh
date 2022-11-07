@@ -135,103 +135,86 @@ function f_aumento {
 
 
 
-# ------------------------ MAIN ------------------------
+## ------------------------ MAIN ------------------------
+
+## La función de este trozo de código es validar que todos las funciones se ejecutan correctamente. Creo que no sería necesario hacer los ifs anidados.
 quien=$(id -u)
       if [[ $quien -ne 0 ]]
       then
             f_crearimagen
-            f_crearred
-            f_crearmaquina
-            f_voladd
-            f_reinicio
-            f_mount
-            f_pausa
-            f_installlxc
-            f_addbr0
-            f_showip
-            f_aumento
+            if [[ $? -eq 0 ]]
+            then 
+                  echo "La imagen se ha creado correctamente."
+                  f_crearred
+                  if [[ $? -eq 0 ]]
+                  then
+                        echo "La red se ha creado correctamente."
+                        f_crearmaquina
+                        if [[ $? -eq 0 ]]
+                        then
+                              echo "La máquina ha sido creada correctamente"
+                              f_voladd
+                              if [[ $? -eq 0 ]]
+                              then
+                                    echo "El volumen ha sido añadido correctamente."
+                                    f_reinicio
+                                    if [[ $? -eq 0 ]]
+                                    then
+                                          f_mount
+                                          if [[ $? -eq 0 ]]
+                                          then
+                                                echo "El disco se ha montado correctamente."
+                                                f_pausa
+                                                if [[ $? -eq 0 ]]
+                                                then
+                                                      f_installlxc
+                                                      if [[ $? -eq 0 ]]
+                                                      then
+                                                            echo "LXC se ha instalado correctamente."
+                                                            f_addbr0
+                                                            if [[ $? -eq 0 ]]
+                                                            then
+                                                                  echo "El bridge br0 se ha añadido correctamente."
+                                                                  f_showip
+                                                                  if [[ $? -eq 0 ]]
+                                                                  then
+                                                                        f_aumento
+                                                                        if [[ $? -eq 0 ]]
+                                                                        then
+                                                                              echo "La memoria RAM se ha aumentado correctamente."
+                                                                        else
+                                                                              echo "Error al aumentar la memoria ram."
+                                                                        fi
+                                                                  else
+                                                                        echo "Error al mostrar la ip."
+                                                                  fi
+                                                            else
+                                                                  echo "Error al crear el brige"
+                                                            fi
+                                                      else
+                                                            echo "Error al instalar o crear la máquina en lxc."
+                                                      fi
+                                                else
+                                                      echo "Error al pausar la máquina"
+                                                fi
+                                          else
+                                                echo "Error al montar el disco."
+                                          fi
+                                    else
+                                          echo "Error al reiniciar la máquina."
+                                    fi
+                              else                     
+                                    echo "Error  al añadir el volumen."
+                              fi
+                        else
+                              echo "Error al crear la máquina."
+                        fi
+                  else
+                        echo "Error al crear la red."
+                  fi
+            else
+                  echo "Error al crear la imagen."
+            fi
       else
             echo "No hay que ejecutar el script como root."
       fi
-
-### La función de este trozo de código es validar que todos las funciones se ejecutan correctamente.
-#quien=$(id -u)
-#      if [[ $quien -ne 0 ]]
-#      then
-#            f_crearimagen
-#            if [[ $? -eq 0 ]]
-#            then 
-#                  echo "La imagen se ha creado correctamente."
-#                  f_crearred
-#                  if [[ $? -eq 0 ]]
-#                  then
-#                        echo "La red se ha creado correctamente."
-#                        f_crearmaquina
-#                        if [[ $? -eq 0 ]]
-#                        then
-#                              echo "La máquina ha sido creada correctamente"
-#                              f_voladd
-#                              if [[ $? -eq 0 ]]
-#                              then
-#                                    echo "El volumen ha sido añadido correctamente."
-#                                    f_reinicio
-#                                    if [[ $? -eq 0 ]]
-#                                    then
-#                                          f_mount
-#                                          if [[ $? -eq 0 ]]
-#                                          then
-#                                                echo "El disco se ha montado correctamente."
-#                                                f_pausa
-#                                                if [[ $? -eq 0 ]]
-#                                                then
-#                                                      f_installlxc
-#                                                      if [[ $? -eq 0 ]]
-#                                                      then
-#                                                            echo "LXC se ha instalado correctamente."
-#                                                            f_addbr0
-#                                                            if [[ $? -eq 0 ]]
-#                                                            then
-#                                                                  echo "El bridge br0 se ha añadido correctamente."
-#                                                                  f_showip
-#                                                                  if [[ $? -eq 0 ]]
-#                                                                  then
-#                                                                        f_aumento
-#                                                                        if [[ $? -eq 0 ]]
-#                                                                        then
-#                                                                              echo "La memoria RAM se ha aumentado correctamente."
-#                                                                        else
-#                                                                              echo "Error al aumentar la memoria ram."
-#                                                                        fi
-#                                                                  else
-#                                                                        echo "Error al mostrar la ip."
-#                                                                  fi
-#                                                            else
-#                                                                  echo "Error al crear el brige"
-#                                                            fi
-#                                                      else
-#                                                            echo "Error al instalar o crear la máquina en lxc."
-#                                                      fi
-#                                                else
-#                                                      echo "Error al pausar la máquina"
-#                                                fi
-#                                          else
-#                                                echo "Error al montar el disco."
-#                                          fi
-#                                    else
-#                                          echo "Error al reiniciar la máquina."
-#                                    fi
-#                              else                     
-#                                    echo "Error  al añadir el volumen."
-#                              fi
-#                        else
-#                              echo "Error al crear la máquina."
-#                        fi
-#                  else
-#                        echo "Error al crear la red."
-#                  fi
-#            else
-#                  echo "Error al crear la imagen."
-#            fi
-#      else
-#            echo "No hay que ejecutar el script como root."
-#      fi
